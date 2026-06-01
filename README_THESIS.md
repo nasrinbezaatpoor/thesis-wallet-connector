@@ -1,117 +1,131 @@
 <div dir="rtl" align="right">
 
-# 🎓 پایان‌نامه: WalletConnector
-### اتصال دو کیف پول بلاکچین بدون نیاز به API Key
+# 🎓 پایان‌نامه: WalletConnector — اتصال دو کیف پول بلاکچین بدون API Key
 
 ---
 
-## 📋 شرح پروژه
+## ❓ مشکل: دو تا ولت داری، می‌خوای ارتباطشون رو بفهمی
 
-این پروژه یک **MCP Server** است که به شما امکان می‌دهد تنها با داشتن **آدرس ولت** (کیف پول)،
-اطلاعات آن را از بلاکچین بخوانید و بین دو کیف پول ارتباط برقرار کنید.
+تصور کن:
 
-**مزیت ویژه:** بدون نیاز به API Key از Etherscan یا BscScan — فقط با استفاده از RPC عمومی بلاکچین.
+- یک ولت قدیمی داری که توی صرافی بایننس استفاده می‌کردی
+- یک ولت جدید ساختی توی Trust Wallet
+- می‌خوای ببینی **آیا این دو تا ولت به هم مرتبط هستند؟**
+- آیا پولی بینشون جابه‌جا شده؟
+- چه بلاکچین‌هایی استفاده می‌کنند؟
+- و مهم‌تر از همه **بدون اینکه مجبور باشی برای API Key ثبت‌نام کنی**
 
----
-
-## 🎯 قابلیت‌ها
-
-| ابزار | توضیحات |
-|-------|---------|
-| `wallet_info` | نمایش اطلاعات کامل یک ولت در چندین بلاکچین |
-| `wallet_comparison` | مقایسه دو ولت کنار هم |
-| `connect_wallets` | **ویژگی اصلی پایان‌نامه** — جستجوی ارتباط بین دو ولت |
-| `token_balance` | دریافت موجودی توکن ERC-20 |
-| `transaction_info` | جزئیات کامل یک تراکنش |
-| `latest_block` | آخرین بلاک یک بلاکچین |
-| `is_contract` | تشخیص Contract یا EOA بودن آدرس |
+**اینجاست که این پروژه به کارت میاد.** فقط با یه آدرس ولت (مثل `0xd61aec...`) کار می‌کنه و همه چیز رو از روی بلاکچین می‌خونه.
 
 ---
 
-## 🌐 بلاکچین‌های پشتیبانی شده
+## ✨ چه قابلیت‌هایی داره؟
+
+### 🏦 `wallet_info` — اطلاعات یک ولت
+بدون نیاز به هیچ کلیدی موجودی هر ولتی رو توی اتریوم، BSC و پلی‌گان چک می‌کنه.
+
+### 🔗 `connect_wallets` — 🎯 **ویژگی اصلی (همون چیزی که برای پایان‌نامه می‌خوای)**
+دو تا آدرس ولت می‌دی بهش، و این کارها رو می‌کنه:
+1. موجودی هر دو رو توی بلاکچین انتخابی چک می‌کنه
+2. تشخیص می‌ده هر کدوم قرارداد هوشمنده یا کیف پول معمولی
+3. تراکنش‌های مشترک بینشون رو جستجو می‌کنه
+4. خلاصه‌ای از ارتباطات رو نشون می‌ده
+
+### 📊 `wallet_comparison` — مقایسه دو ولت کنار هم
+### 🪙 `token_balance` — موجودی توکن ERC-20
+### ℹ️ `transaction_info` — جزئیات کامل یه تراکنش
+### 🔍 `is_contract` — تشخیص Contract یا EOA
+
+---
+
+## 🚀 چطور اجرا کنم؟
+
+```bash
+# همین سه تا کلمه:
+python3 thesis_wallet_connector.py
+```
+
+**هیچ کتابخانه اضافه‌ای نصب نمی‌خواد!** فقط پایتون ۳ که روی هر سیستم عاملی هست.
+
+---
+
+## 🌐 چه بلاکچین‌هایی پشتیبانی می‌شه؟
 
 | بلاکچین | واحد | RPC عمومی |
 |----------|------|-----------|
-| Ethereum | ETH | ethereum-rpc.publicnode.com |
-| BSC (BEP-20) | BNB | bsc-dataseed1.binance.org |
-| Polygon | MATIC | polygon-rpc.com |
+| **اتریوم** | ETH | `ethereum-rpc.publicnode.com` |
+| **زنجیره هوشمند بایننس (BSC)** | BNB | `bsc-dataseed1.binance.org` |
+| **پلی‌گان** | MATIC | `polygon-rpc.com` |
+
+**همه رایگان** — بدون API Key، بدون ثبت‌نام.
 
 ---
 
-## 🚀 اجرا
+## 🧪 یه مثال واقعی
+
+تراست ولت نصب کردی؟ ولت جدیدت رو بده به برنامه:
 
 ```bash
-# بدون هیچ API Key — فقط اجرا کن!
-python3 thesis_wallet_connector.py
-
-# یا با دیتیل بیشتر
-python3 thesis_wallet_connector.py --debug
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"wallet_info","arguments":{"address":"0x54817444b7EE2229A5028d43Fc0FEd3746A82De9"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
 ```
 
----
-
-## 📡 اتصال به عنوان MCP Client
-
-اگر از Codex CLI یا Claude Desktop استفاده می‌کنید:
-
-```json
-{
-  "mcpServers": {
-    "thesis-wallet": {
-      "command": "python3",
-      "args": ["path/to/thesis_wallet_connector.py"]
-    }
-  }
-}
-```
-
----
-
-## 🧪 نمونه استفاده (تست مستقیم)
+و برای اتصال دو ولت به هم:
 
 ```bash
-# اطلاعات یک کیف پول
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"clientInfo":{"name":"test","version":"1.0"},"capabilities":{}}}
-{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"wallet_info","arguments":{"address":"0xd61aec395613d833aa52bdd18a2cc7ee606837f5"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"connect_wallets","arguments":{"wallet_a":"0xd61aec395613d833aa52bdd18a2cc7ee606837f5","wallet_b":"0x54817444b7EE2229A5028d43Fc0FEd3746A82De9","chain":"bsc"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
 ```
 
 ---
 
-## 📁 ساختار فایل‌ها
+## 🧠 چطور کار می‌کنه (بدون API Key)؟
+
+ببین، Etherscan و BscScan برای استفاده از APIشون ازت کلید می‌خوان. ولی بلاکچین ذاتاً یه شبکه عمومی‌ست و RPCهای عمومی (Public RPC Nodes) بدون کلید در دسترس هستن.
+
+**این پروژه مستقیم با همون RPCهای عمومی حرف می‌زنه:**
+
+```
+ولت شما → پایتون (MCP Server) → درخواست JSON-RPC → نود عمومی بلاکچین → اطلاعات بلاکچین → خروجی
+```
+
+**مختصر:** این کار دور کلید API رو می‌زنه و مستقیم می‌ره سراغ خود بلاکچین.
+
+---
+
+## 📁 فایل‌های پروژه
 
 ```
 mcp-server/
-├── mcp_server.py                 # هسته MCP سرور (پایه)
-├── thesis_wallet_connector.py    # 🎓 پروژه پایان‌نامه (همین فایل)
-├── etherscan_mcp_server.py       # (اختیاری) با API Key
-└── README_THESIS.md              # این فایل
+├── thesis_wallet_connector.py    🎯 فایل اصلی پایان‌نامه
+├── mcp_server.py                 موتور پایه MCP
+├── etherscan_mcp_server.py       (اختیاری — نیاز به API Key داره)
+├── README.md                     توضیحات انگلیسی
+└── README_THESIS.md              این فایل
 ```
 
 ---
 
-## 🔬 معماری فنی
+## 🎯 این پروژه به چه دردی می‌خوره؟
 
-1. **ورودی:** فقط آدرس ولت (مثلاً `0xd61aec...`)
-2. **پردازش:** تماس با RPC عمومی بلاکچین از طریق JSON-RPC
-3. **خروجی:** اطلاعات موجودی، نوع آدرس، تراکنش‌ها، و ارتباط بین دو ولت
-
-### نحوه کار بدون API Key:
-
-```
-Wallet Address → Python MCP Server → Public RPC Node → Blockchain Data → Results
-```
+- **دانشجوهای مهندسی کامپیوتر / بلاکچین** که پروژه پایان‌نامه دارند
+- **توسعه‌دهنده‌هایی** که می‌خوان بدون سردرگمی ثبت‌نام API Key یه تست سریع بکنن
+- **محقق‌هایی** که چند تا آدرس ولت دارند و می‌خوان ارتباطشون رو بفهمن
+- **هر کسی** که دو تا آدرس داره و می‌خواد بدونه به هم ربط دارند یا نه
 
 ---
 
-## 📚 مراجع
+## 💡 ایده‌های آینده
 
-- [Ethereum JSON-RPC Specification](https://ethereum.org/en/developers/docs/apis/json-rpc/)
-- [BSC Public RPC](https://docs.bnbchain.org/)
-- [MCP Protocol](https://modelcontextprotocol.io/)
+- [ ] اضافه کردن بلاکچین‌های بیشتر (Arbitrum, Avalanche, Optimism)
+- [ ] جستجوی تراکنش‌های تاریخی بین دو ولت
+- [ ] نمایش تاریخچه توکن‌های ERC-20/BEP-20
+- [ ] یک صفحه وب ساده برای استفاده راحت‌تر
+- [ ] تحلیل چند ولت با هم
 
 ---
 
-**نویسنده:** برای پروژه پایان‌نامه دانشگاهی  
-**تاریخ:** خرداد ۱۴۰۵
+**با ❤️ برای پروژه پایان‌نامه**  
+**نویسنده:** نسرین بی‌زارپور  
+**تاریخ:** خرداد ۱۴۰۵  
+**استاد راهنما:** —
 
 </div>

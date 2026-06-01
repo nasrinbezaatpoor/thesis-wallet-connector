@@ -1,152 +1,168 @@
-# MCP Server
+# 🔗 Wallet Connector — Connect Two Blockchain Wallets Without Any API Key
 
-A lightweight [Model Context Protocol](https://modelcontextprotocol.io) server implementation in Python.
-
-Communicates via **JSON-RPC 2.0** over **stdin/stdout** — the standard transport for MCP. No external dependencies required (stdlib only).
-
-## Quick Start
-
-```bash
-# Run the demo server
-python3 mcp_server.py
-```
-
-The server listens for JSON-RPC messages on stdin and responds on stdout. Connect it to any MCP-compatible client (Claude Desktop, Codex, etc.).
-
-## Usage
-
-### Direct invocation (for testing)
-
-```bash
-# Send a single initialize request
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"clientInfo":{"name":"test-client","version":"0.1.0"},"capabilities":{}}}' | python3 mcp_server.py
-
-# Debug mode (logs to stderr)
-python3 mcp_server.py --debug
-```
-
-### With an MCP client
-
-Configure the server in your MCP client's settings:
-
-```json
-{
-  "mcpServers": {
-    "my-server": {
-      "command": "python3",
-      "args": ["/path/to/mcp_server.py"]
-    }
-  }
-}
-```
-
-## Included Tools
-
-| Tool | Description |
-|------|-------------|
-| `calculator` | Basic arithmetic (`add`, `subtract`, `multiply`, `divide`) |
-| `echo` | Echoes input text back |
-| `current_time` | Returns the current UTC datetime as ISO 8601 |
-| `greet` | Generates a personalized greeting |
-
-## Included Resources
-
-| URI | Description |
-|-----|-------------|
-| `server://info` | JSON metadata about the server |
-
-## Included Prompts
-
-| Name | Description |
-|------|-------------|
-| `code_review` | Template for asking the model to review code |
-
-## Extending
-
-Add your own tools, resources, and prompts via decorators:
-
-```python
-from mcp_server import MCPServer
-
-server = MCPServer(name="my-server", version="1.0.0")
-
-@server.tool(
-    name="my_tool",
-    description="Does something useful",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "input": {"type": "string"},
-        },
-        "required": ["input"],
-    },
-)
-def my_tool(input: str) -> str:
-    return f"Processed: {input}"
-
-server.run()
-```
-
-## Protocol Support
-
-- Lifecycle: `initialize`, `notifications/initialized`
-- Tools: `tools/list`, `tools/call`
-- Resources: `resources/list`, `resources/read`
-- Prompts: `prompts/list`, `prompts/get`
-- Error handling: Standard JSON-RPC error codes
+> **Thesis Project** | Connect two wallets using only public blockchain RPC nodes — no Etherscan, BscScan, or any API key required.
 
 ---
 
-## Etherscan MCP Server
+## 🧩 The Problem
 
-Provides 14 blockchain data tools via the [Etherscan API](https://etherscan.io/apis).
+You have **two wallet addresses** and you want to find out:
 
-### Setup
+- Are they connected? (shared transactions, common transfers)
+- What's the balance of each on different blockchains?
+- Is one a smart contract and the other an EOA?
+- How can I analyze them without signing up for API keys?
+
+Normally you'd need an Etherscan API key (which can take hours to register).  
+**This project solves that** — it uses **public RPC nodes** directly. Zero registration, zero API keys.
+
+---
+
+## 🚀 Quick Start
 
 ```bash
-export ETHERSCAN_API_KEY="your-api-key"
-python3 etherscan_mcp_server.py
+# No dependencies to install — just run it!
+python3 thesis_wallet_connector.py
 ```
 
-Or pass the key as an argument:
+That's it. No `pip install`, no `.env` file, no API key configuration.
 
-```bash
-python3 etherscan_mcp_server.py --api-key YOUR_KEY
-```
+---
 
-Get a free API key at [etherscan.io/myapikey](https://etherscan.io/myapikey).
+## 🔧 Available Tools
 
-### Available Tools
-
-| Tool | Description |
+| Tool | What it does |
 |------|-------------|
-| `eth_balance` | ETH balance of an address (wei & ether) |
-| `eth_historical_balance` | Balance at a specific block number |
-| `eth_transactions` | Recent normal ETH transactions |
-| `eth_internal_transactions` | Internal transactions for an address |
-| `eth_token_balance` | ERC-20 token balance for a wallet |
-| `eth_token_supply` | Total supply of an ERC-20 token |
-| `eth_total_eth_supply` | Total supply of ETH |
-| `eth_contract_abi` | ABI for a verified contract |
-| `eth_contract_source` | Verified source code of a contract |
-| `eth_gas_oracle` | Current gas price estimates (Safe/Proposed/Fast) |
-| `eth_gas_estimate` | Estimate gas for a transaction |
-| `eth_block_number` | Latest block number |
-| `eth_block_info` | Detailed info about a specific block |
-| `eth_event_logs` | Event logs for a contract address |
+| `wallet_info` | Check one wallet across Ethereum, BSC, and Polygon |
+| `connect_wallets` | 🔍 **Main feature** — analyze connection between two wallets |
+| `wallet_comparison` | Compare two wallets side by side |
+| `token_balance` | Get ERC-20 token balance for any address |
+| `transaction_info` | Get full details of a transaction |
+| `latest_block` | Latest block number for a chain |
+| `is_contract` | Check if an address is a contract or regular wallet (EOA) |
 
-### Client Configuration
+---
+
+## 🧪 Live Examples
+
+### 1️⃣ Check wallet info
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"wallet_info","arguments":{"address":"0xd61aec395613d833aa52bdd18a2cc7ee606837f5"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
+```
+
+**Output:**
+```
+📊 Wallet Info: 0xd61aec395613d833aa52bdd18a2cc7ee606837f5
+
+  ✅ Ethereum Mainnet: 0.000173 ETH
+  ✅ BNB Smart Chain: 0.000000 BNB
+  ❌ Polygon: HTTP 401 — Unauthorized
+```
+
+### 2️⃣ Connect two wallets (the main thesis feature)
+
+```bash
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"connect_wallets","arguments":{"wallet_a":"0xd61aec395613d833aa52bdd18a2cc7ee606837f5","wallet_b":"0x54817444b7EE2229A5028d43Fc0FEd3746A82De9","chain":"bsc"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
+```
+
+**Output:**
+```
+🔗 Wallet Connector — Analyzing connections
+  Chain:    BNB Smart Chain
+  Wallet A: 0xd61aec395613d833aa52bdd18a2cc7ee606837f5
+  Wallet B: 0x54817444b7EE2229A5028d43Fc0FEd3746A82De9
+
+  📊 Step 1: Checking Balances...
+     Wallet A: 0.000000 BNB
+     Wallet B: 0.000000 BNB
+
+  📋 Step 2: Analyzing Address Types...
+     Wallet A: EOA (External Owned Account — regular wallet)
+     Wallet B: Smart Contract
+
+  🔄 Step 3: Searching for Common Transfers...
+
+  💡 For deeper analysis, check balances on other chains or get ERC-20 token balances.
+```
+
+---
+
+## 🌐 Supported Blockchains
+
+| Chain | Currency | Public RPC |
+|-------|----------|------------|
+| **Ethereum** | ETH | `ethereum-rpc.publicnode.com` |
+| **BNB Smart Chain (BSC)** | BNB | `bsc-dataseed1.binance.org` |
+| **Polygon** | MATIC | `polygon-rpc.com` |
+
+No API keys needed for any of them.
+
+---
+
+## 🏗️ Architecture (How it works)
+
+```
+Your Wallet Address 
+  → Python MCP Server 
+    → Public RPC Node (JSON-RPC over HTTPS) 
+      → Blockchain Data 
+        → Beautiful output
+```
+
+The server implements the **[Model Context Protocol (MCP)](https://modelcontextprotocol.io)** — a standard way for AI tools and scripts to talk to each other.
+
+---
+
+## 💻 Use with MCP Clients
+
+Add to your **Codex CLI** or **Claude Desktop** config:
 
 ```json
 {
   "mcpServers": {
-    "etherscan": {
+    "thesis-wallet": {
       "command": "python3",
-      "args": ["/path/to/etherscan_mcp_server.py"],
-      "env": {
-        "ETHERSCAN_API_KEY": "your-api-key"
-      }
+      "args": ["/path/to/thesis_wallet_connector.py"]
     }
   }
 }
 ```
+
+---
+
+## 📁 Project Files
+
+```
+mcp-server/
+├── thesis_wallet_connector.py    🎯 Main thesis project (no API keys)
+├── mcp_server.py                 MCP server framework (base engine)
+├── etherscan_mcp_server.py       Optional — needs Etherscan API key
+├── README.md                     This file
+└── README_THESIS.md              Persian documentation (پایان‌نامه)
+```
+
+---
+
+## 🎓 Who is this for?
+
+- **University students** working on blockchain thesis projects
+- **Developers** who don't want to register for API keys just to test something
+- **Researchers** analyzing wallet connections on public chains
+- **Anyone** who has two addresses and wants to see if they're related
+
+---
+
+## 🛣️ Roadmap / Future Ideas
+
+- [ ] Add more chains (Arbitrum, Optimism, Avalanche)
+- [ ] Historical transaction search between two wallets
+- [ ] Token transfer history (ERC-20 / BEP-20)
+- [ ] Web dashboard (simple UI)
+- [ ] Batch wallet analysis
+
+---
+
+**Made with ❤️ for a university thesis project**  
+**Author:** Nasrin Bezaatpoor  
+**Date:** Khordad 1405 (June 2026)
