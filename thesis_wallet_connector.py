@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-پروژه پایان‌نامه: WalletConnector - پل بین دو کیف پول
-Thesis Project: Connect two wallets using only blockchain RPC (no API key required)
+پروژه پایان‌نامه: Web3Connector - پل ارتباطی به Web3
+Thesis Project: Web3 Bridge - Connect to blockchain without any API key
 
 این سرور MCP با استفاده از RPC عمومی بلاکچین، بدون نیاز به API Key،
-اطلاعات دو کیف پول را می‌خواند و ارتباط بین آنها را تحلیل می‌کند.
+شما را به دنیای Web3 متصل می‌کند و ارتباط بین آدرس‌ها را تحلیل می‌کند.
 """
 
 import json
@@ -23,7 +23,7 @@ logging.basicConfig(
     format="%(levelname)s: %(message)s",
     stream=sys.stderr,
 )
-log = logging.getLogger("thesis-wallet")
+log = logging.getLogger("thesis-web3")
 
 # ──────────────────────────────────────────────────────────────────
 # Public RPC Endpoints (no API key required)
@@ -72,7 +72,7 @@ def rpc_call(chain: str, method: str, params: list) -> dict[str, Any]:
         req = urllib.request.Request(
             url,
             data=payload,
-            headers={"Content-Type": "application/json", "User-Agent": "thesis-wallet/1.0"},
+            headers={"Content-Type": "application/json", "User-Agent": "thesis-web3/1.0"},
         )
         with urllib.request.urlopen(req, timeout=15) as resp:
             result = json.loads(resp.read().decode())
@@ -115,8 +115,8 @@ def encode_address_for_call(address: str) -> str:
 # ──────────────────────────────────────────────────────────────────
 
 def create_thesis_server() -> MCPServer:
-    """Create the thesis MCP server with wallet connection tools."""
-    server = MCPServer(name="thesis-wallet-connector", version="1.0.0")
+    """Create the thesis MCP server with Web3 connection tools."""
+    server = MCPServer(name="thesis-web3-connector", version="1.0.0")
 
     # =====================================================================
     # Tool 1: Get wallet basic info (balance on all chains)
@@ -124,20 +124,20 @@ def create_thesis_server() -> MCPServer:
 
     @server.tool(
         name="wallet_info",
-        description="Get basic information about a wallet across multiple blockchains",
+        description="Web3: Get address info across Ethereum, BSC and Polygon",
         input_schema={
             "type": "object",
             "properties": {
                 "address": {
                     "type": "string",
-                    "description": "Wallet address (0x-prefixed)",
+                    "description": "Address (0x-prefixed) - any wallet or contract",
                 },
             },
             "required": ["address"],
         },
     )
     def wallet_info(address: str) -> str:
-        lines = [f"📊 Wallet Info: {address}\n"]
+        lines = [f"📊 Web3 Info: {address}\n"]
         for chain_id, chain_info in RPC_ENDPOINTS.items():
             resp = rpc_call(chain_id, "eth_getBalance", [address, "latest"])
             if "error" in resp:
@@ -199,7 +199,7 @@ def create_thesis_server() -> MCPServer:
             "properties": {
                 "address": {
                     "type": "string",
-                    "description": "Wallet address (0x-prefixed)",
+                    "description": "Address (0x-prefixed) - any wallet or contract",
                 },
                 "token_address": {
                     "type": "string",
@@ -318,11 +318,11 @@ def create_thesis_server() -> MCPServer:
             "properties": {
                 "wallet_a": {
                     "type": "string",
-                    "description": "First wallet address (0x-prefixed)",
+                    "description": "First address (0x-prefixed)",
                 },
                 "wallet_b": {
                     "type": "string",
-                    "description": "Second wallet address (0x-prefixed)",
+                    "description": "Second address (0x-prefixed)",
                 },
                 "chain": {
                     "type": "string",
@@ -363,11 +363,11 @@ def create_thesis_server() -> MCPServer:
         b = wallet_b.lower()
 
         lines = [
-            f"🔗 Wallet Connector — Analyzing connections",
+            f"🔗 Web3 Connector — Analyzing connections",
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
             f"  Chain:    {chain_info['name']}",
-            f"  Wallet A: {wallet_a}",
-            f"  Wallet B: {wallet_b}",
+            f"  Address A: {wallet_a}",
+            f"  Address B: {wallet_b}",
             f"  Block Range: #{from_block:,} → #{to_block_num:,}",
             "",
         ]
@@ -441,11 +441,11 @@ def create_thesis_server() -> MCPServer:
             "properties": {
                 "wallet_a": {
                     "type": "string",
-                    "description": "First wallet address (0x-prefixed)",
+                    "description": "First address (0x-prefixed)",
                 },
                 "wallet_b": {
                     "type": "string",
-                    "description": "Second wallet address (0x-prefixed)",
+                    "description": "Second address (0x-prefixed)",
                 },
             },
             "required": ["wallet_a", "wallet_b"],
@@ -454,8 +454,8 @@ def create_thesis_server() -> MCPServer:
     def wallet_comparison(wallet_a: str, wallet_b: str) -> str:
         lines = ["📊 Wallet Comparison Report"]
         lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        lines.append(f"  Wallet A: {wallet_a}")
-        lines.append(f"  Wallet B: {wallet_b}")
+        lines.append(f"  Address A: {wallet_a}")
+        lines.append(f"  Address B: {wallet_b}")
         lines.append("")
 
         for chain_id, chain_info in RPC_ENDPOINTS.items():
@@ -483,7 +483,7 @@ if __name__ == "__main__":
         log.setLevel(logging.DEBUG)
 
     server = create_thesis_server()
-    print("🚀 Thesis Wallet Connector Server Started!", file=sys.stderr)
+    print("🚀 Thesis Web3 Connector Server Started!", file=sys.stderr)
     print("📘 No API keys required — uses public RPC nodes", file=sys.stderr)
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", file=sys.stderr)
     

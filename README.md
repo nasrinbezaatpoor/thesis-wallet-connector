@@ -1,6 +1,6 @@
-# 🔗 Wallet Connector — Connect Two Blockchain Wallets Without Any API Key
+# 🔗 Web3 Connector — Connect to Web3 Without Any API Key
 
-> **Thesis Project** | Connect two wallets using only public blockchain RPC nodes — no Etherscan, BscScan, or any API key required.
+> **Thesis Project** | Connect to Web3 using only public blockchain RPC nodes — no Etherscan, BscScan, or any API key required.
 
 ---
 
@@ -60,7 +60,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"wallet_inf
   ❌ Polygon: HTTP 401 — Unauthorized
 ```
 
-### 2️⃣ Connect two wallets (the main thesis feature)
+### 2️⃣ Connect to Web3 (the main thesis feature)
 
 ```bash
 echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"connect_wallets","arguments":{"wallet_a":"0xd61aec395613d833aa52bdd18a2cc7ee606837f5","wallet_b":"0x54817444b7EE2229A5028d43Fc0FEd3746A82De9","chain":"bsc"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
@@ -68,7 +68,7 @@ echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"connect_wa
 
 **Output:**
 ```
-🔗 Wallet Connector — Analyzing connections
+🔗 Web3 Connector — Analyzing connections
   Chain:    BNB Smart Chain
   Wallet A: 0xd61aec395613d833aa52bdd18a2cc7ee606837f5
   Wallet B: 0x54817444b7EE2229A5028d43Fc0FEd3746A82De9
