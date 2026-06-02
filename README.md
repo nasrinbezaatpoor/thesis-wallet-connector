@@ -48,12 +48,12 @@ That's it. No `pip install`, no `.env` file, no API key configuration.
 ### 1️⃣ Check wallet info
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"wallet_info","arguments":{"address":"0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"wallet_info","arguments":{"address":"0xd61aec395613d833aa52bdd18a2cc7ee606837f5"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
 ```
 
 **Output:**
 ```
-📊 Wallet Info: 0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe
+📊 Wallet Info: 0xd61aec395613d833aa52bdd18a2cc7ee606837f5
 
   ✅ Ethereum Mainnet: 0.000173 ETH
   ✅ BNB Smart Chain: 0.000000 BNB
@@ -63,15 +63,15 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"wallet_inf
 ### 2️⃣ Connect to Web3 (the main thesis feature)
 
 ```bash
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"connect_wallets","arguments":{"wallet_a":"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045","wallet_b":"0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe","chain":"bsc"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"connect_wallets","arguments":{"wallet_a":"0xd61aec395613d833aa52bdd18a2cc7ee606837f5","wallet_b":"0x54817444b7EE2229A5028d43Fc0FEd3746A82De9","chain":"bsc"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
 ```
 
 **Output:**
 ```
 🔗 Web3 Connector — Analyzing connections
   Chain:    BNB Smart Chain
-  Address A: 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
-  Address B: 0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe
+  Address A: 0xd61aec395613d833aa52bdd18a2cc7ee606837f5
+  Address B: 0x54817444b7EE2229A5028d43Fc0FEd3746A82De9
 
   📊 Step 1: Checking Balances...
      Address A: 0.000000 BNB
