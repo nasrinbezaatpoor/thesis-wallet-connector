@@ -13,7 +13,7 @@
 - می‌خوای ببینی یه آدرس قرارداد هوشمنده یا ولت معمولی
 - و مهم‌تر از همه **بدون اینکه مجبور باشی برای API Key ثبت‌نام کنی**
 
-**اینجاست که این پروژه به کارت میاد.** فقط با یه آدرس (مثل `0x123456...`) کار می‌کنه و مستقیم از بلاکچین اطلاعات می‌گیره.
+**اینجاست که این پروژه به کارت میاد.** فقط با یه آدرس (مثل `0xd8dA6BF...`) کار می‌کنه و مستقیم از بلاکچین اطلاعات می‌گیره.
 
 ---
 
@@ -63,12 +63,12 @@ python3 thesis_wallet_connector.py
 
 برای اطلاعات یه آدرس:
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"wallet_info","arguments":{"address":"0x1234567890abcdef1234567890abcdef12345678"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"wallet_info","arguments":{"address":"0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
 ```
 
 برای اتصال دو آدرس به هم:
 ```bash
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"connect_wallets","arguments":{"wallet_a":"0x1234567890abcdef1234567890abcdef12345678","wallet_b":"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","chain":"bsc"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"connect_wallets","arguments":{"wallet_a":"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045","wallet_b":"0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe","chain":"bsc"}}}' | python3 thesis_wallet_connector.py 2>/dev/null
 ```
 
 ---
