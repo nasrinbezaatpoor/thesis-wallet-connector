@@ -51,6 +51,13 @@ RPC_ENDPOINTS = {
         "currency": "MATIC",
         "explorer": "https://polygonscan.com",
     },
+    "arbitrum": {
+        "name": "Arbitrum One",
+        "rpc": "https://arb1.arbitrum.io/rpc",
+        "chain_id": 42161,
+        "currency": "ETH",
+        "explorer": "https://arbiscan.io",
+    },
     # Add more chains as needed
 }
 
@@ -339,12 +346,18 @@ def create_thesis_server() -> MCPServer:
                     "description": "Ending block (default: latest). Use 'latest' for the most recent block.",
                     "default": "latest",
                 },
+                "tx_hash": {
+                    "type": "string",
+                    "description": "Optional: known transaction hash between the two wallets for direct verification",
+                    "default": "",
+                },
             },
             "required": ["wallet_a", "wallet_b", "chain"],
         },
     )
     def connect_wallets(wallet_a: str, wallet_b: str, chain: str,
-                        from_block: int = 0, to_block: str = "latest") -> str:
+                        from_block: int = 0, to_block: str = "latest",
+                        tx_hash: str = "") -> str:
         chain_info = RPC_ENDPOINTS[chain]
         
         # If to_block is "latest", get the latest block number
@@ -392,40 +405,112 @@ def create_thesis_server() -> MCPServer:
             else:
                 lines.append(f"     Wallet {label}: EOA (External Owned Account)")
 
-        # Method 3: Get transaction receipt topics for wallet A
+        # Method 3: Find common transactions (native & ERC-20)
         lines.append("")
         lines.append("🔄 Step 3: Searching for Common Transfers...")
         
-        # Topic filter: Transfer events
-        # Transfer event signature: keccak256("Transfer(address,address,uint256)")
+        # ── 3A: Check known transaction hash (fast) ──
+        lines.append("     📍 3a) Checking for native coin transfers...")
+        native_found = []
+        
+        # If user provided a tx_hash, verify it
+        if tx_hash:
+            tx_resp = rpc_call(chain, "eth_getTransactionByHash", [tx_hash])
+            if "result" in tx_resp and tx_resp["result"]:
+                tx_data = tx_resp["result"]
+                tx_from = tx_data.get("from", "").lower()
+                tx_to = tx_data.get("to", "").lower() if tx_data.get("to") else ""
+                val = int(tx_data.get("value", "0x0"), 16)
+                
+                if tx_from in (a, b) and tx_to in (a, b) and tx_from != tx_to and val > 0:
+                    direction = "A→B" if tx_from == a else "B→A"
+                    native_found.append({
+                        "tx": tx_hash,
+                        "value": val,
+                        "direction": direction,
+                    })
+        
+        # ── Also scan last 5 blocks for recent activity ──
+        clean_url = chain_info["rpc"]
+        block_resp = rpc_call(chain, "eth_blockNumber", [])
+        if "result" in block_resp:
+            latest_block = hex_to_int(block_resp["result"])
+            start_block = max(latest_block - 5, from_block)
+            
+            for block_num in range(latest_block, start_block - 1, -1):
+                block_hex = hex(block_num)
+                block_resp = rpc_call(chain, "eth_getBlockByNumber", [block_hex, True])
+                if "result" in block_resp and block_resp["result"]:
+                    for tx in block_resp["result"].get("transactions", []):
+                        tx_from = tx.get("from", "").lower()
+                        tx_to = tx.get("to", "").lower() if tx.get("to") else ""
+                        val = int(tx.get("value", "0x0"), 16)
+                        
+                        if val > 0 and tx_from in (a, b) and tx_to in (a, b) and tx_from != tx_to:
+                            direction = "A→B" if tx_from == a else "B→A"
+                            if not any(c["tx"] == tx["hash"] for c in native_found):
+                                native_found.append({
+                                    "tx": tx["hash"],
+                                    "value": val,
+                                    "direction": direction,
+                                })
+                if native_found:
+                    break
+        
+        if native_found:
+            explorer = chain_info["explorer"]
+            currency = chain_info["currency"]
+            for conn in native_found[:10]:
+                val_eth = wei_to_eth(conn["value"])
+                lines.append(f"     ✅ {conn['direction']} | {val_eth:.6f} {currency}")
+                lines.append(f"        Tx: {explorer}/tx/{conn['tx']}")
+        
+        # ── 3B: Search for ERC-20 Transfer events ──
+        lines.append("     📍 3b) Searching for ERC-20/BEP-20 Transfer events...")
         transfer_topic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
         
-        found_connections = []
-        
-        # Search for logs where wallet_a is the sender (topic1)
         params_a_from = {
             "fromBlock": hex(from_block),
             "toBlock": to_block_hex,
             "topics": [transfer_topic, "0x000000000000000000000000" + a[2:], "0x000000000000000000000000" + b[2:]],
         }
-        
-        # Search for logs where wallet_a is the receiver (topic2)
         params_a_to = {
             "fromBlock": hex(from_block),
             "toBlock": to_block_hex,
             "topics": [transfer_topic, "0x000000000000000000000000" + b[2:], "0x000000000000000000000000" + a[2:]],
         }
 
+        erc20_found = []
+        for params, direction in [(params_a_from, "A→B"), (params_a_to, "B→A")]:
+            logs_resp = rpc_call(chain, "eth_getLogs", [params])
+            if "result" in logs_resp and logs_resp["result"]:
+                for log_entry in logs_resp["result"]:
+                    erc20_found.append({
+                        "tx": log_entry.get("transactionHash", "unknown"),
+                        "token": log_entry.get("address", "unknown"),
+                        "direction": direction,
+                    })
+
+        if erc20_found:
+            explorer = chain_info["explorer"]
+            for conn in erc20_found[:10]:
+                lines.append(f"     ✅ {conn['direction']} | Token: {conn['token'][:10]}...")
+                lines.append(f"        Tx: {explorer}/tx/{conn['tx']}")
+        
+        total = len(native_found) + len(erc20_found)
+        if total == 0:
+            lines.append("     🔍 No common transactions found in scanned range.")
+        
         lines.append("")
         lines.append("📝 Summary of Connection Analysis:")
-        lines.append(f"     Between {wallet_a[:10]}... and {wallet_b[:10]}...")
-
-        # Provide instruction for advanced analysis
-        lines.append("")
-        lines.append("💡 For deeper analysis, use the specific tools:")
-        lines.append(f"     • Check balances on other chains")
-        lines.append(f"     • Get token balances if these are ERC-20 addresses")
-        lines.append(f"     • Use transaction_info for specific tx hashes")
+        lines.append(f"     • Native transfers found: {len(native_found)}")
+        lines.append(f"     • ERC-20 transfers found: {len(erc20_found)}")
+        lines.append(f"     • Total connections: {total}")
+        if total > 0:
+            lines.append(f"     ✅ Wallets ARE connected on {chain_info['name']}!")
+        else:
+            lines.append(f"     ℹ️  No direct connection found on {chain_info['name']}")
+            lines.append(f"     💡 Try a different chain or expand block range")
 
         return "\n".join(lines)
 
