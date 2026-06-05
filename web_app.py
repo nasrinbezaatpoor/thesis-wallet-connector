@@ -184,6 +184,82 @@ HTML = r"""<!DOCTYPE html>
 
 <script>
 const API = '/api';
+let connectedWallet = null;
+
+// Web3 Wallet Connection
+async function connectWeb3() {
+  if (typeof window.ethereum === 'undefined') {
+    alert('❌ کیف پول Web3 پیدا نشد!
+لطفاً MetaMask یا Trust Wallet نصب کنید.
+
+اگر توی موبایل هستید، از Trust Wallet使用 کنید.');
+    return;
+  }
+  
+  const btn = document.getElementById('web3-btn');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'در حال اتصال <span class="loading"></span>';
+  
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    connectedWallet = accounts[0];
+    
+    // Show connected wallet
+    document.getElementById('web3-status').innerHTML = 
+      '<span class="badge badge-success">✅ متصل</span> ' + 
+      connectedWallet.slice(0, 6) + '...' + connectedWallet.slice(-4);
+    
+    // Auto-fill wallet A
+    document.getElementById('wallet_a').value = connectedWallet;
+    document.getElementById('address').value = connectedWallet;
+    
+    // Listen for account changes
+    window.ethereum.on('accountsChanged', function(accounts) {
+      connectedWallet = accounts[0] || null;
+      if (connectedWallet) {
+        document.getElementById('web3-status').innerHTML = 
+          '<span class="badge badge-success">✅ متصل</span> ' + 
+          connectedWallet.slice(0, 6) + '...' + connectedWallet.slice(-4);
+        document.getElementById('wallet_a').value = connectedWallet;
+        document.getElementById('address').value = connectedWallet;
+      } else {
+        document.getElementById('web3-status').textContent = '❌ قطع اتصال';
+      }
+    });
+    
+    // Auto-detect network
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    const chainMap = {
+      '0x1': 'ethereum',
+      '0x38': 'bsc',
+      '0x89': 'polygon',
+      '0xa4b1': 'arbitrum',
+      '0xa4ba': 'arbitrum'
+    };
+    if (chainMap[chainId]) {
+      document.getElementById('chain-connect').value = chainMap[chainId];
+    }
+    
+  } catch (err) {
+    document.getElementById('web3-status').innerHTML = 
+      '<span class="badge badge-error">❌ خطا</span> ' + err.message.slice(0, 40);
+  }
+  
+  btn.disabled = false;
+  btn.innerHTML = orig;
+}
+
+// Add Web3 button to the page after the subtitle
+document.addEventListener('DOMContentLoaded', function() {
+  const subtitle = document.querySelector('.subtitle');
+  const web3Div = document.createElement('div');
+  web3Div.style.cssText = 'text-align:center;margin-bottom:20px';
+  web3Div.innerHTML = 
+    '<button id="web3-btn" class="btn" style="width:auto;display:inline-block;padding:10px 24px;margin-bottom:8px" onclick="connectWeb3()">🦊 اتصال کیف پول Web3</button>' +
+    '<div id="web3-status" style="font-size:0.85rem;color:#888"></div>';
+  subtitle.parentNode.insertBefore(web3Div, subtitle.nextSibling);
+});
 
 function $(id){return document.getElementById(id)}
 
