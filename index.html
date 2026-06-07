@@ -382,10 +382,44 @@ async function connectWallets() {
       if (tx) {
         const f = tx.from.toLowerCase(), t = (tx.to || '').toLowerCase();
         const val = hexToInt(tx.value);
-        if (val > 0 && f === aL && t === bL) { totalConnections++; lines.push('  ✅ A→B ✓'); }
-        else if (val > 0 && f === bL && t === aL) { totalConnections++; lines.push('  ✅ B→A ✓'); }
-        else { lines.push('  ℹ️ تراکنش پیدا شد اما مربوط به این دو ولت نیست'); }
-        lines.push(`  💰 مقدار: ${weiToEth(val).toFixed(6)} ${info.cur}`);
+        
+        // Check if it's a native transfer (ETH/BNB)
+        let foundNative = false;
+        if (val > 0 && f === aL && t === bL) { totalConnections++; foundNative = true; lines.push('  ✅ A→B (انتقال بومی) ✓'); }
+        else if (val > 0 && f === bL && t === aL) { totalConnections++; foundNative = true; lines.push('  ✅ B→A (انتقال بومی) ✓'); }
+        
+        if (foundNative) {
+          lines.push(`  💰 مقدار: ${weiToEth(val).toFixed(6)} ${info.cur}`);
+        } else {
+          // Check transaction receipt for ERC-20 Transfer events
+          lines.push('  📋 بررسی تراکنش توکن (ERC-20)...');
+          const topic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+          const receipt = await rpcCall(chain, 'eth_getTransactionReceipt', [txHash]);
+          if (receipt && receipt.logs) {
+            let tokenFound = 0;
+            for (const log of receipt.logs) {
+              if (log.topics && log.topics[0] === topic) {
+                const fromAddr = '0x' + log.topics[1].slice(26).toLowerCase();
+                const toAddr = '0x' + log.topics[2].slice(26).toLowerCase();
+                if ((fromAddr === aL && toAddr === bL) || (fromAddr === bL && toAddr === aL)) {
+                  const tokenVal = hexToInt(log.data);
+                  const tokenSymbol = log.address.slice(0, 10) + '...';
+                  totalConnections++;
+                  tokenFound++;
+                  lines.push(`  ✅ ${fromAddr === aL ? 'A' : 'B'}→${toAddr === bL ? 'B' : 'A'} (توکن)`);
+                  lines.push(`     🪙 قرارداد: ${tokenSymbol}`);
+                  if (fromAddr === aL && toAddr === bL) lines.push(`     💰 مقدار: ${tokenVal}`);
+                  else lines.push(`     💰 مقدار: ${tokenVal}`);
+                }
+              }
+            }
+            if (!tokenFound) {
+              lines.push('  ℹ️ تراکنش پیدا شد اما انتقالی بین این دو ولت در آن یافت نشد');
+            }
+          } else {
+            lines.push('  ℹ️ تراکنش پیدا شد اما از نوع قرارداد است');
+          }
+        }
         lines.push(`  🔗 ${info.exp}/tx/${txHash}`);
       } else { lines.push('  ❌ تراکنش یافت نشد'); }
     }
