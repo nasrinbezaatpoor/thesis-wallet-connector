@@ -217,13 +217,9 @@ async function connectWallet() {
     document.getElementById('wallet-network').textContent = currentChain ? RPC[currentChain].name : '🔴 ناشناخته (' + chainId + ')';
     document.getElementById('wallet-status').innerHTML = '<span class="badge badge-wallet">🦊 متصل</span>';
     
-    // Auto-fill
+    // Auto-fill (only address, not network)
     document.getElementById('address').value = connectedWallet;
     document.getElementById('wallet_a').value = connectedWallet;
-    if (currentChain) {
-      document.getElementById('chain-info').value = currentChain;
-      document.getElementById('chain-connect').value = currentChain;
-    }
     
     // Listen for changes
     window.ethereum.on('accountsChanged', (accts) => {
@@ -238,7 +234,12 @@ async function connectWallet() {
       }
     });
     
-    window.ethereum.on('chainChanged', () => { setTimeout(() => connectWallet(), 1000); });
+    window.ethereum.on('chainChanged', (newChainId) => {
+      for (const [key, val] of Object.entries(RPC)) {
+        if (val.chainId === newChainId) { currentChain = key; break; }
+      }
+      document.getElementById('wallet-network').textContent = currentChain ? RPC[currentChain].name : ('X ' + newChainId);
+    });
     
     setOutput('✅ کیف پول با موفقیت متصل شد!\n📌 آدرس: ' + connectedWallet);
   } catch (err) {
@@ -249,27 +250,33 @@ async function connectWallet() {
 }
 
 // ─── Switch Network ────────────────────────────────────────────
+// --- Switch Network ---
 async function switchNetwork(chainKey) {
   if (!connectedWallet) {
-    setOutput('❌ لطفاً ابتدا کیف پول را متصل کنید', true);
+    setOutput('X Please connect wallet first', true);
     return;
   }
   const chain = RPC[chainKey];
   if (!chain) {
-    setOutput('❌ شبکه نامعتبر است', true);
+    setOutput('X Invalid network', true);
     return;
   }
   
-  setOutput('⏳ در حال تغییر شبکه به ' + chain.name + '...');
+  // Update dropdowns first (always, even if wallet switch fails)
+  document.getElementById('chain-connect').value = chainKey;
+  document.getElementById('chain-info').value = chainKey;
+  document.getElementById('wallet-network').textContent = chain.name;
+  
+  setOutput(' Switching to ' + chain.name + '...');
   
   try {
-    // Try to switch to the chain
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: chain.chainId }]
     });
+    setOutput('Y Network switched to ' + chain.name + '!\
+Now click "Search Connection".');
   } catch (switchError) {
-    // This error code indicates that the chain has not been added to MetaMask
     if (switchError.code === 4902) {
       try {
         await window.ethereum.request({
@@ -277,32 +284,24 @@ async function switchNetwork(chainKey) {
           params: [{
             chainId: chain.chainId,
             chainName: chain.name,
-            nativeCurrency: {
-              name: chain.cur,
-              symbol: chain.curSymbol || chain.cur,
-              decimals: chain.curDecimals || 18
-            },
+            nativeCurrency: { name: chain.cur, symbol: chain.curSymbol || chain.cur, decimals: chain.curDecimals || 18 },
             rpcUrls: [chain.url],
             blockExplorerUrls: [chain.exp]
           }]
         });
+        setOutput('Y Network ' + chain.name + ' added! Try again.');
       } catch (addError) {
-        setOutput('❌ خطا در اضافه کردن شبکه: ' + addError.message, true);
-        return;
+        setOutput('Y Network selected! (Switch manually in your wallet if needed)', true);
       }
+    } else if (switchError.code === 4001) {
+      setOutput('W Switch cancelled. But dropdown is on ' + chain.name + '.', true);
     } else {
-      if (switchError.code !== 4001) {
-        setOutput('❌ خطا: ' + switchError.message, true);
-      }
-      return;
+      // Zerion and some wallets don't support wallet_switchEthereumChain
+      setOutput('Y Set to ' + chain.name + '!\
+If wallet didnt change, switch network in Zerion manually.', true);
     }
   }
-  
-  setOutput('✅ شبکه با موفقیت به ' + chain.name + ' تغییر یافت!');
-  // connectWallet will be called automatically via chainChanged event
 }
-
-// ─── RPC Call ──────────────────────────────────────────────────
 async function rpcCall(chain, method, params) {
   const info = RPC[chain];
   if (!info) throw new Error('بلاکچین نامعتبر: ' + chain);
