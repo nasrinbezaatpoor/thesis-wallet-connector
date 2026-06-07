@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔗 Wallet Connector — پروژه پایان‌نامه</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;500;700;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Vazirmatn',sans-serif;
+    background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+    min-height:100vh;color:#e0e0e0;padding:20px
+  }
+  .container{max-width:900px;margin:0 auto}
+  h1{
+    text-align:center;font-size:2rem;font-weight:900;
+    background:linear-gradient(90deg,#00d2ff,#928dab);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    margin:20px 0 8px
+  }
+  .subtitle{text-align:center;color:#888;margin-bottom:20px;font-size:0.9rem}
+  .card{
+    background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.1);border-radius:16px;
+    padding:20px;margin-bottom:16px
+  }
+  .card h2{font-size:1.1rem;margin-bottom:12px;color:#aaa;font-weight:500}
+  .card h2 span{color:#00d2ff}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:600px){.grid{grid-template-columns:1fr}}
+  label{display:block;font-size:0.8rem;color:#999;margin-bottom:3px}
+  input,select{
+    width:100%;padding:8px 12px;background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.15);border-radius:10px;
+    color:#fff;font-size:0.9rem;font-family:'Vazirmatn',sans-serif;
+    direction:ltr;text-align:left
+  }
+  input:focus,select:focus{
+    outline:none;border-color:#00d2ff;box-shadow:0 0 0 3px rgba(0,210,255,0.15)
+  }
+  select option{background:#1a1a2e;color:#fff}
+  .btn{
+    width:100%;padding:10px;border:none;border-radius:10px;
+    font-family:'Vazirmatn',sans-serif;font-size:0.95rem;font-weight:700;
+    cursor:pointer;transition:0.3s;margin-top:12px;
+    background:linear-gradient(90deg,#00d2ff,#3a7bd5);color:#fff
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,210,255,0.3)}
+  .btn:disabled{opacity:0.5;cursor:not-allowed}
+  .btn-wallet{
+    background:linear-gradient(90deg,#f7931a,#ff6b35);margin-top:0;
+    width:auto;display:inline-block;padding:10px 24px
+  }
+  .btn-wallet:hover{box-shadow:0 6px 20px rgba(247,147,26,0.3)}
+  .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .flex .btn{flex:0 1 auto}
+  #output{
+    background:rgba(0,0,0,0.4);border-radius:12px;padding:16px;
+    font-family:'Courier New',monospace;font-size:0.8rem;
+    white-space:pre-wrap;line-height:1.6;min-height:60px;
+    margin-top:16px;direction:ltr;text-align:left;
+    overflow-x:auto
+  }
+  .badge{
+    display:inline-block;padding:2px 8px;border-radius:20px;
+    font-size:0.7rem;font-weight:700;margin:2px
+  }
+  .badge-success{background:rgba(0,200,83,0.2);color:#4caf50}
+  .badge-error{background:rgba(255,82,82,0.2);color:#ff5252}
+  .badge-info{background:rgba(0,210,255,0.2);color:#00d2ff}
+  .badge-wallet{background:rgba(247,147,26,0.2);color:#f7931a}
+  .loading{
+    display:inline-block;width:14px;height:14px;
+    border:2px solid rgba(255,255,255,0.2);border-top-color:#00d2ff;
+    border-radius:50%;animation:spin 0.8s linear infinite;
+    margin-left:6px;vertical-align:middle
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .footer{text-align:center;padding:16px;color:#555;font-size:0.75rem}
+  .connected-bar{
+    background:rgba(0,200,83,0.1);border:1px solid rgba(0,200,83,0.2);
+    border-radius:10px;padding:8px 14px;margin-bottom:12px;
+    direction:ltr;text-align:left;font-size:0.8rem
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔗 Wallet Connector</h1>
+  <p class="subtitle">پروژه پایان‌نامه — اتصال دو کیف پول بلاکچین بدون API Key</p>
+
+  <!-- Wallet Connection Bar -->
+  <div class="card" style="padding:14px">
+    <div class="flex" style="justify-content:space-between">
+      <div>
+        <button class="btn btn-wallet" onclick="connectWallet()" id="web3-btn">
+          🦊 اتصال کیف پول
+        </button>
+      </div>
+      <div id="wallet-status" style="font-size:0.8rem;color:#888">
+        کیف پول متصل نیست
+      </div>
+    </div>
+    <div id="connected-info" style="display:none" class="connected-bar">
+      <span class="badge badge-success">✅ متصل</span>
+      آدرس: <span id="wallet-address"></span>
+      <span style="margin:0 10px">|</span>
+      شبکه: <span id="wallet-network"></span>
+    </div>
+  </div>
+
+  <!-- Wallet Info -->
+  <div class="card">
+    <h2>🏦 <span>اطلاعات یک ولت</span></h2>
+    <div class="grid">
+      <div>
+        <label>آدرس ولت</label>
+        <input id="address" placeholder="0x..." style="direction:ltr">
+      </div>
+      <div>
+        <label>بلاکچین</label>
+        <select id="chain-info">
+          <option value="ethereum">اتریوم</option>
+          <option value="bsc">بایننس (BSC)</option>
+          <option value="polygon">پولیگان</option>
+          <option value="arbitrum" selected>آربیتروم</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" onclick="getWalletInfo()">📊 نمایش اطلاعات</button>
+  </div>
+
+  <!-- Connect Wallets -->
+  <div class="card">
+    <h2>🔗 <span>اتصال دو ولت</span></h2>
+    <div class="grid">
+      <div><label>ولت اول (A)</label><input id="wallet_a" placeholder="0x..." style="direction:ltr"></div>
+      <div><label>ولت دوم (B)</label><input id="wallet_b" placeholder="0x..." style="direction:ltr"></div>
+    </div>
+    <div class="grid" style="margin-top:10px">
+      <div><label>بلاکچین</label><select id="chain-connect"><option value="ethereum">اتریوم</option><option value="bsc" selected>بایننس (BSC)</option><option value="polygon">پولیگان</option><option value="arbitrum">آربیتروم</option></select></div>
+      <div><label>هش تراکنش (اختیاری)</label><input id="tx_hash" placeholder="0x..." style="direction:ltr"></div>
+    </div>
+    <div class="flex" style="margin-top:10px">
+      <button class="btn" onclick="connectWallets()" style="flex:2">🔍 جستجوی اتصال</button>
+      <button class="btn" onclick="compareWallets()" style="flex:1">📊 مقایسه</button>
+    </div>
+  </div>
+
+  <!-- Demo -->
+  <div class="card">
+    <h2>⚡ <span>دموی سریع</span></h2>
+    <p style="color:#888;font-size:0.8rem;margin-bottom:10px">با یک کلیک، اتصال دو ولت نمونه را روی آربیتروم بررسی کنید</p>
+    <button class="btn" onclick="runDemo()">🚀 اجرای دمو</button>
+  </div>
+
+  <div id="output">
+    <div style="color:#666">💡 کیف پول خود را وصل کنید یا آدرس‌ها را دستی وارد کنید</div>
+  </div>
+
+  <div class="footer">
+    🎓 پروژه پایان‌نامه — بدون API Key، فقط با Web3 و RPC عمومی
+  </div>
+</div>
+
+<script>
+// ─── RPC Configuration ──────────────────────────────────────────
+const RPC = {
+  ethereum: { name:'اتریوم', url:'https://ethereum-rpc.publicnode.com', cur:'ETH', exp:'https://etherscan.io', chainId:'0x1' },
+  bsc:      { name:'بایننس (BSC)', url:'https://bsc-dataseed1.binance.org', cur:'BNB', exp:'https://bscscan.com', chainId:'0x38' },
+  polygon:  { name:'پولیگان', url:'https://polygon-rpc.com', cur:'MATIC', exp:'https://polygonscan.com', chainId:'0x89' },
+  arbitrum: { name:'آربیتروم', url:'https://arb1.arbitrum.io/rpc', cur:'ETH', exp:'https://arbiscan.io', chainId:'0xa4b1' }
+};
+
+let connectedWallet = null;
+let currentChain = null;
+
+// ─── Web3 Wallet Connection ────────────────────────────────────
+async function connectWallet() {
+  if (typeof window.ethereum === 'undefined') {
+    setOutput('❌ کیف پول Web3 پیدا نشد!\nلطفاً MetaMask (دسکتاپ) یا Trust Wallet (موبایل) را نصب کنید.', true);
+    return;
+  }
+  const btn = document.getElementById('web3-btn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ در حال اتصال...';
+
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    connectedWallet = accounts[0];
+    
+    // Get network info
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    
+    // Find matching chain
+    currentChain = null;
+    for (const [key, val] of Object.entries(RPC)) {
+      if (val.chainId === chainId) { currentChain = key; break; }
+    }
+    
+    // Update UI
+    document.getElementById('connected-info').style.display = 'block';
+    document.getElementById('wallet-address').textContent = connectedWallet;
+    document.getElementById('wallet-network').textContent = currentChain ? RPC[currentChain].name : '🔴 ناشناخته (' + chainId + ')';
+    document.getElementById('wallet-status').innerHTML = '<span class="badge badge-wallet">🦊 متصل</span>';
+    
+    // Auto-fill
+    document.getElementById('address').value = connectedWallet;
+    document.getElementById('wallet_a').value = connectedWallet;
+    if (currentChain) {
+      document.getElementById('chain-info').value = currentChain;
+      document.getElementById('chain-connect').value = currentChain;
+    }
+    
+    // Listen for changes
+    window.ethereum.on('accountsChanged', (accts) => {
+      connectedWallet = accts[0] || null;
+      if (connectedWallet) {
+        document.getElementById('wallet-address').textContent = connectedWallet;
+        document.getElementById('address').value = connectedWallet;
+        document.getElementById('wallet_a').value = connectedWallet;
+      } else {
+        document.getElementById('connected-info').style.display = 'none';
+        document.getElementById('wallet-status').innerHTML = 'کیف پول متصل نیست';
+      }
+    });
+    
+    window.ethereum.on('chainChanged', () => { setTimeout(() => connectWallet(), 1000); });
+    
+    setOutput('✅ کیف پول با موفقیت متصل شد!\n📌 آدرس: ' + connectedWallet);
+  } catch (err) {
+    setOutput('❌ خطا در اتصال: ' + err.message, true);
+  }
+  btn.disabled = false;
+  btn.innerHTML = '🦊 اتصال کیف پول';
+}
+
+// ─── RPC Call ──────────────────────────────────────────────────
+async function rpcCall(chain, method, params) {
+  const info = RPC[chain];
+  if (!info) throw new Error('بلاکچین نامعتبر: ' + chain);
+  
+  const resp = await fetch(info.url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc:'2.0', id:1, method, params })
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error('RPC: ' + JSON.stringify(data.error));
+  return data.result;
+}
+
+function hexToInt(h) { return parseInt(h, 16); }
+function weiToEth(w) { return w / 1e18; }
+
+// ─── Wallet Info ────────────────────────────────────────────────
+async function getWalletInfo() {
+  const address = document.getElementById('address').value.trim();
+  const chain = document.getElementById('chain-info').value;
+  if (!address || !address.startsWith('0x')) { setOutput('❌ لطفاً آدرس معتبر وارد کنید', true); return; }
+
+  setOutput('⏳ در حال دریافت اطلاعات...');
+  try {
+    const info = RPC[chain];
+    let lines = [`🏦 Wallet Info — ${info.name}`, '━'.repeat(40)];
+    lines.push(`  📌 آدرس: ${address}`);
+    
+    // Balance
+    const bal = await rpcCall(chain, 'eth_getBalance', [address, 'latest']);
+    lines.push(`  💰 موجودی: ${weiToEth(hexToInt(bal)).toFixed(6)} ${info.cur}`);
+    
+    // Contract check
+    const code = await rpcCall(chain, 'eth_getCode', [address, 'latest']);
+    lines.push(`  👤 نوع: ${code !== '0x' ? 'قرارداد هوشمند' : 'کیف پول معمولی (EOA)'}`);
+    
+    // Tx count
+    const nonce = await rpcCall(chain, 'eth_getTransactionCount', [address, 'latest']);
+    lines.push(`  🔄 تراکنش‌ها: ${hexToInt(nonce).toLocaleString()}`);
+    
+    lines.push('', `  🔗 ${info.exp}/address/${address}`);
+    setOutput(lines.join('\n'));
+  } catch (e) { setOutput('❌ خطا: ' + e.message, true); }
+}
+
+// ─── Connect Wallets ────────────────────────────────────────────
+async function connectWallets() {
+  const a = document.getElementById('wallet_a').value.trim();
+  const b = document.getElementById('wallet_b').value.trim();
+  const chain = document.getElementById('chain-connect').value;
+  const txHash = document.getElementById('tx_hash').value.trim();
+  
+  if (!a || !b || !a.startsWith('0x') || !b.startsWith('0x')) {
+    setOutput('❌ لطفاً دو آدرس معتبر وارد کنید', true); return;
+  }
+
+  setOutput('⏳ در حال جستجو... ممکن است چند ثانیه طول بکشد');
+  try {
+    const info = RPC[chain];
+    const aL = a.toLowerCase(), bL = b.toLowerCase();
+    let lines = [`🔗 Analyzing Connection — ${info.name}`, '━'.repeat(40)];
+    lines.push(`  A: ${a}`, `  B: ${b}`, '');
+    
+    // Step 1: Balances
+    lines.push('📊 مرحله ۱: موجودی‌ها');
+    for (const [label, addr] of [['A',a],['B',b]]) {
+      const bal = await rpcCall(chain, 'eth_getBalance', [addr, 'latest']);
+      lines.push(`  ولت ${label}: ${weiToEth(hexToInt(bal)).toFixed(6)} ${info.cur}`);
+    }
+    
+    // Step 2: Check tx_hash
+    let totalConnections = 0;
+    if (txHash) {
+      lines.push('', `🔍 مرحله ۲: بررسی تراکنش ${txHash.slice(0,16)}...`);
+      const tx = await rpcCall(chain, 'eth_getTransactionByHash', [txHash]);
+      if (tx) {
+        const f = tx.from.toLowerCase(), t = (tx.to || '').toLowerCase();
+        const val = hexToInt(tx.value);
+        if (val > 0 && f === aL && t === bL) { totalConnections++; lines.push('  ✅ A→B ✓'); }
+        else if (val > 0 && f === bL && t === aL) { totalConnections++; lines.push('  ✅ B→A ✓'); }
+        else { lines.push('  ℹ️ تراکنش پیدا شد اما مربوط به این دو ولت نیست'); }
+        lines.push(`  💰 مقدار: ${weiToEth(val).toFixed(6)} ${info.cur}`);
+        lines.push(`  🔗 ${info.exp}/tx/${txHash}`);
+      } else { lines.push('  ❌ تراکنش یافت نشد'); }
+    }
+    
+    // Step 3: ERC-20 Transfer events
+    lines.push('', '📋 مرحله ۳: جستجوی تراکنش‌های توکن');
+    const topic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+    const latestBlock = hexToInt(await rpcCall(chain, 'eth_blockNumber', []));
+    const fromBlock = Math.max(0, latestBlock - 500000);
+    
+    for (const [dir, t1, t2] of [['A→B', aL, bL], ['B→A', bL, aL]]) {
+      const logs = await rpcCall(chain, 'eth_getLogs', [{
+        fromBlock: '0x' + fromBlock.toString(16),
+        toBlock: 'latest',
+        topics: [topic, '0x000000000000000000000000' + t1.slice(2), '0x000000000000000000000000' + t2.slice(2)]
+      }]);
+      if (logs && logs.length > 0) {
+        totalConnections += logs.length;
+        lines.push(`  ✅ ${dir}: ${logs.length} تراکنش`);
+        for (const log of logs.slice(0, 3)) {
+          lines.push(`    🪙 توکن: ${log.address.slice(0,10)}...`);
+          lines.push(`       🔗 ${info.exp}/tx/${log.transactionHash}`);
+        }
+        if (logs.length > 3) lines.push(`    ... و ${logs.length-3} تراکنش دیگر`);
+      }
+    }
+    
+    lines.push('', '━'.repeat(40));
+    if (totalConnections > 0) {
+      lines.push(`  🎯 نتیجه: ✅ این دو ولت به هم متصل هستند! (${totalConnections} اتصال)`);
+    } else {
+      lines.push(`  🎯 نتیجه: ❌ اتصالی بین این دو ولت یافت نشد`);
+      lines.push(`  💡 راهنمایی: بلاکچین دیگری امتحان کنید یا tx_hash وارد کنید`);
+    }
+    setOutput(lines.join('\n'));
+  } catch (e) { setOutput('❌ خطا: ' + e.message, true); }
+}
+
+// ─── Compare ────────────────────────────────────────────────────
+async function compareWallets() {
+  const a = document.getElementById('wallet_a').value.trim();
+  const b = document.getElementById('wallet_b').value.trim();
+  if (!a || !b || !a.startsWith('0x') || !b.startsWith('0x')) {
+    setOutput('❌ لطفاً دو آدرس معتبر وارد کنید', true); return;
+  }
+  
+  setOutput('⏳ در حال مقایسه...');
+  try {
+    let lines = ['📊 Wallet Comparison', '━'.repeat(40)];
+    lines.push(`  A: ${a}`, `  B: ${b}`, '');
+    
+    for (const [key, info] of Object.entries(RPC)) {
+      lines.push(`── ${info.name} ──`);
+      try {
+        const balA = await rpcCall(key, 'eth_getBalance', [a, 'latest']);
+        const balB = await rpcCall(key, 'eth_getBalance', [b, 'latest']);
+        lines.push(`  A: ${weiToEth(hexToInt(balA)).toFixed(6)} ${info.cur}`);
+        lines.push(`  B: ${weiToEth(hexToInt(balB)).toFixed(6)} ${info.cur}`);
+      } catch(e) { lines.push(`  ❌ ${e.message}`); }
+      lines.push('');
+    }
+    setOutput(lines.join('\n'));
+  } catch (e) { setOutput('❌ خطا: ' + e.message, true); }
+}
+
+// ─── Demo ────────────────────────────────────────────────────────
+async function runDemo() {
+  document.getElementById('wallet_a').value = '0xd61aec395613d833aa52bdd18a2cc7ee606837f5';
+  document.getElementById('wallet_b').value = '0xB05271136822c4dD6d1b96A3FAD2D277BC83F9f4';
+  document.getElementById('chain-connect').value = 'arbitrum';
+  document.getElementById('tx_hash').value = '0xc43ef1c10d8ab913e69e0f4b4c426ed652791e4f5eecae474ce4e5a174a010b0';
+  await connectWallets();
+}
+
+// ─── UI Helpers ──────────────────────────────────────────────────
+function setOutput(text, isError = false) {
+  const out = document.getElementById('output');
+  if (isError) {
+    out.innerHTML = '<span class="badge badge-error">❌ خطا</span>\n' + text;
+  } else {
+    out.textContent = text;
+  }
+}
+</script>
+</body>
+</html>
