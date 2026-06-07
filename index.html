@@ -151,9 +151,10 @@
       <div><label>ولت دوم (B)</label><input id="wallet_b" placeholder="0x..." style="direction:ltr"></div>
     </div>
     <div class="grid" style="margin-top:10px">
-      <div><label>بلاکچین</label><select id="chain-connect"><option value="ethereum">اتریوم</option><option value="bsc" selected>بایننس (BSC)</option><option value="polygon">پولیگان</option><option value="arbitrum">آربیتروم</option></select></div>
+      <div><label>بلاکچین <span style="font-size:0.7rem;color:#888">(مستقل از کیف پول)</span></label><select id="chain-connect"><option value="ethereum">اتریوم</option><option value="bsc" selected>بایننس (BSC)</option><option value="polygon">پولیگان</option><option value="arbitrum">آربیتروم</option></select></div>
       <div><label>هش تراکنش (اختیاری)</label><input id="tx_hash" placeholder="0x..." style="direction:ltr"></div>
     </div>
+    <p style="color:#888;font-size:0.75rem;margin-top:6px">💡 انتخاب بلاکچین در این بخش فقط برای جستجو است و نیازی نیست کیف پول شما روی همان شبکه باشد.</p>
     <div class="flex" style="margin-top:10px">
       <button class="btn" onclick="connectWallets()" style="flex:2">🔍 جستجوی اتصال</button>
       <button class="btn" onclick="compareWallets()" style="flex:1">📊 مقایسه</button>
@@ -163,8 +164,8 @@
   <!-- Demo -->
   <div class="card">
     <h2>⚡ <span>دموی سریع</span></h2>
-    <p style="color:#888;font-size:0.8rem;margin-bottom:10px">با یک کلیک، اتصال دو ولت نمونه را روی آربیتروم بررسی کنید</p>
-    <button class="btn" onclick="runDemo()">🚀 اجرای دمو</button>
+    <p style="color:#888;font-size:0.8rem;margin-bottom:10px">اتصال ولت A (استاد) با ولت C را روی آربیتروم بررسی کنید</p>
+    <button class="btn" onclick="runDemo()">🚀 نمایش اتصال A ↔ C در آربیتروم</button>
   </div>
 
   <div id="output">
@@ -253,12 +254,12 @@ async function connectWallet() {
 // --- Switch Network ---
 async function switchNetwork(chainKey) {
   if (!connectedWallet) {
-    setOutput('X Please connect wallet first', true);
+    setOutput('❌ لطفاً ابتدا کیف پول را متصل کنید', true);
     return;
   }
   const chain = RPC[chainKey];
   if (!chain) {
-    setOutput('X Invalid network', true);
+    setOutput('❌ شبکه نامعتبر است', true);
     return;
   }
   
