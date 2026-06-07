@@ -107,6 +107,18 @@
       آدرس: <span id="wallet-address"></span>
       <span style="margin:0 10px">|</span>
       شبکه: <span id="wallet-network"></span>
+      <div id="network-switcher" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:0.75rem;color:#999">🔀 تغییر شبکه:</span>
+        <select id="network-switch" style="width:auto;padding:4px 6px;font-size:0.75rem;direction:ltr;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#fff">
+          <option value="ethereum">اتریوم</option>
+          <option value="bsc">بایننس (BSC)</option>
+          <option value="polygon">پولیگان</option>
+          <option value="arbitrum">آربیتروم</option>
+        </select>
+        <button onclick="switchNetwork(document.getElementById('network-switch').value)" style="padding:4px 12px;border:none;border-radius:6px;background:linear-gradient(90deg,#00d2ff,#3a7bd5);color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:'Vazirmatn',sans-serif">
+          🔄 سوئیچ
+        </button>
+      </div>
     </div>
   </div>
 
@@ -167,10 +179,10 @@
 <script>
 // ─── RPC Configuration ──────────────────────────────────────────
 const RPC = {
-  ethereum: { name:'اتریوم', url:'https://ethereum-rpc.publicnode.com', cur:'ETH', exp:'https://etherscan.io', chainId:'0x1' },
-  bsc:      { name:'بایننس (BSC)', url:'https://bsc-dataseed1.binance.org', cur:'BNB', exp:'https://bscscan.com', chainId:'0x38' },
-  polygon:  { name:'پولیگان', url:'https://polygon-rpc.com', cur:'MATIC', exp:'https://polygonscan.com', chainId:'0x89' },
-  arbitrum: { name:'آربیتروم', url:'https://arb1.arbitrum.io/rpc', cur:'ETH', exp:'https://arbiscan.io', chainId:'0xa4b1' }
+  ethereum: { name:'اتریوم', url:'https://ethereum-rpc.publicnode.com', cur:'ETH', curSymbol:'ETH', curDecimals:18, exp:'https://etherscan.io', chainId:'0x1' },
+  bsc:      { name:'بایننس (BSC)', url:'https://bsc-dataseed1.binance.org', cur:'BNB', curSymbol:'BNB', curDecimals:18, exp:'https://bscscan.com', chainId:'0x38' },
+  polygon:  { name:'پولیگان', url:'https://polygon-rpc.com', cur:'MATIC', curSymbol:'MATIC', curDecimals:18, exp:'https://polygonscan.com', chainId:'0x89' },
+  arbitrum: { name:'آربیتروم', url:'https://arb1.arbitrum.io/rpc', cur:'ETH', curSymbol:'ETH', curDecimals:18, exp:'https://arbiscan.io', chainId:'0xa4b1' }
 };
 
 let connectedWallet = null;
@@ -234,6 +246,60 @@ async function connectWallet() {
   }
   btn.disabled = false;
   btn.innerHTML = '🦊 اتصال کیف پول';
+}
+
+// ─── Switch Network ────────────────────────────────────────────
+async function switchNetwork(chainKey) {
+  if (!connectedWallet) {
+    setOutput('❌ لطفاً ابتدا کیف پول را متصل کنید', true);
+    return;
+  }
+  const chain = RPC[chainKey];
+  if (!chain) {
+    setOutput('❌ شبکه نامعتبر است', true);
+    return;
+  }
+  
+  setOutput('⏳ در حال تغییر شبکه به ' + chain.name + '...');
+  
+  try {
+    // Try to switch to the chain
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: chain.chainId }]
+    });
+  } catch (switchError) {
+    // This error code indicates that the chain has not been added to MetaMask
+    if (switchError.code === 4902) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: chain.chainId,
+            chainName: chain.name,
+            nativeCurrency: {
+              name: chain.cur,
+              symbol: chain.curSymbol || chain.cur,
+              decimals: chain.curDecimals || 18
+            },
+            rpcUrls: [chain.url],
+            blockExplorerUrls: [chain.exp]
+          }]
+        });
+      } catch (addError) {
+        setOutput('❌ خطا در اضافه کردن شبکه: ' + addError.message, true);
+        return;
+      }
+    } else {
+      if (switchError.code !== 4001) {
+        setOutput('❌ خطا: ' + switchError.message, true);
+      }
+      return;
+    }
+  }
+  
+  setOutput('✅ شبکه با موفقیت به ' + chain.name + ' تغییر یافت!');
+  // connectWallet will be called automatically via chainChanged event
 }
 
 // ─── RPC Call ──────────────────────────────────────────────────
