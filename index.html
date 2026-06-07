@@ -268,15 +268,15 @@ async function switchNetwork(chainKey) {
   document.getElementById('chain-info').value = chainKey;
   document.getElementById('wallet-network').textContent = chain.name;
   
-  setOutput(' Switching to ' + chain.name + '...');
+  setOutput('🔄 در حال تغییر شبکه به ' + chain.name + '...');
   
   try {
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: chain.chainId }]
     });
-    setOutput('Y Network switched to ' + chain.name + '!\
-Now click "Search Connection".');
+    setOutput('✅ شبکه با موفقیت به ' + chain.name + ' تغییر یافت!\
+اکنون روی "جستجوی اتصال" کلیک کنید.');
   } catch (switchError) {
     if (switchError.code === 4902) {
       try {
@@ -290,7 +290,7 @@ Now click "Search Connection".');
             blockExplorerUrls: [chain.exp]
           }]
         });
-        setOutput('Y Network ' + chain.name + ' added! Try again.');
+        setOutput('✅ شبکه ' + chain.name + ' اضافه شد! دوباره امتحان کنید.');
       } catch (addError) {
         setOutput('Y Network selected! (Switch manually in your wallet if needed)', true);
       }
