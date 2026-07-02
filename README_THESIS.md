@@ -55,9 +55,12 @@ python3 thesis_wallet_connector.py
 |----------|------|-----------|
 | **اتریوم** | ETH | `ethereum-rpc.publicnode.com` |
 | **زنجیره هوشمند بایننس (BSC)** | BNB | `bsc-dataseed1.binance.org` |
-| **پلی‌گان** | MATIC | `polygon-rpc.com` |
+| **پلی‌گان** | MATIC | `polygon-bor.publicnode.com` |
+| **آربیتروم وان** | ETH | `arb1.arbitrum.io/rpc` |
 
 **همه رایگان** — بدون API Key، بدون ثبت‌نام.
+
+> **تغییر:** Polygon RPC از `polygon-rpc.com` به `polygon-bor.publicnode.com` تغییر کرد چون سرور قبلی خطای ۴۰۱ می‌داد.
 
 ---
 
@@ -115,7 +118,7 @@ mcp-server/
 
 ## 💡 ایده‌های آینده
 
-- [ ] اضافه کردن بلاکچین‌های بیشتر (Arbitrum, Avalanche, Optimism)
+- [x] اضافه کردن بلاکچین آربیتروم وان ✅
 - [ ] جستجوی تراکنش‌های تاریخی بین دو ولت
 - [ ] نمایش تاریخچه توکن‌های ERC-20/BEP-20
 - [ ] یک صفحه وب ساده برای استفاده راحت‌تر
