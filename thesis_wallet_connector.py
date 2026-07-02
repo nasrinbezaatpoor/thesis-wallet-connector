@@ -13,7 +13,7 @@ import os
 import logging
 import urllib.request
 import urllib.error
-from typing import Any
+from typing import Any, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mcp_server import MCPServer, log
@@ -46,7 +46,7 @@ RPC_ENDPOINTS = {
     },
     "polygon": {
         "name": "Polygon",
-        "rpc": "https://polygon-rpc.com",
+        "rpc": "https://polygon-bor.publicnode.com",
         "chain_id": 137,
         "currency": "MATIC",
         "explorer": "https://polygonscan.com",
@@ -554,13 +554,294 @@ def create_thesis_server() -> MCPServer:
                     lines.append(f"     Wallet {label}: Error")
             lines.append("")
 
+
         return "\n".join(lines)
+
+    # =====================================================================
+    # Tool 8: Send native currency (ETH/BNB/MATIC)
+    # =====================================================================
+
+    @server.tool(
+        name="send_native",
+        description="Send native currency (ETH/BNB/MATIC) from one wallet to another. Requires private key.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "from_private_key": {
+                    "type": "string",
+                    "description": "Private key of the sender wallet (0x-prefixed hex)",
+                },
+                "to_address": {
+                    "type": "string",
+                    "description": "Recipient wallet address (0x-prefixed)",
+                },
+                "amount": {
+                    "type": "string",
+                    "description": "Amount to send (e.g. '0.01')",
+                },
+                "chain": {
+                    "type": "string",
+                    "enum": ["ethereum", "bsc", "polygon", "arbitrum"],
+                    "description": "Blockchain to use",
+                },
+            },
+            "required": ["from_private_key", "to_address", "amount", "chain"],
+        },
+    )
+    def send_native(from_private_key: str, to_address: str, amount: str, chain: str) -> str:
+        try:
+            from web3 import Web3
+            from eth_account import Account
+        except ImportError:
+            return "❌ Error: 'web3' library is required. Install with: pip install web3"
+
+        if chain not in RPC_ENDPOINTS:
+            return f"❌ Unsupported chain: {chain}. Supported: {list(RPC_ENDPOINTS.keys())}"
+
+        chain_info = RPC_ENDPOINTS[chain]
+        w3 = Web3(Web3.HTTPProvider(chain_info["rpc"]))
+
+        if not w3.is_connected():
+            return f"❌ Cannot connect to {chain_info['name']} RPC"
+
+        try:
+            account = Account.from_key(from_private_key)
+        except Exception as e:
+            return f"❌ Invalid private key: {e}"
+
+        sender = account.address
+
+        if not Web3.is_address(to_address):
+            return f"❌ Invalid recipient address: {to_address}"
+
+        to_address = Web3.to_checksum_address(to_address)
+
+        try:
+            amount_wei = w3.to_wei(amount, "ether")
+        except Exception as e:
+            return f"❌ Invalid amount: {e}"
+
+        try:
+            nonce = w3.eth.get_transaction_count(sender)
+            gas_price = w3.eth.gas_price
+            chain_id = chain_info["chain_id"]
+
+            tx = {
+                "nonce": nonce,
+                "to": to_address,
+                "value": amount_wei,
+                "gas": 21000,
+                "gasPrice": gas_price,
+                "chainId": chain_id,
+            }
+
+            signed = account.sign_transaction(tx)
+            tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+            tx_hex = tx_hash.hex()
+
+            lines = ["✅ Transaction Sent Successfully!"]
+            lines.append(f"   From:     {sender}")
+            lines.append(f"   To:       {to_address}")
+            lines.append(f"   Amount:   {amount} {chain_info['currency']}")
+            lines.append(f"   Network:  {chain_info['name']}")
+            lines.append(f"   Tx Hash:  {tx_hex}")
+            lines.append(f"   Explorer: {chain_info['explorer']}/tx/{tx_hex}")
+            return "\n".join(lines)
+
+        except Exception as e:
+            return f"❌ Transaction failed: {e}"
+
+    # =====================================================================
+    # Tool 9: Send ERC-20 / BEP-20 tokens (e.g. BTCB, USDT)
+    # =====================================================================
+
+    @server.tool(
+        name="send_token",
+        description="Send ERC-20/BEP-20 tokens (like BTCB, USDT) from one wallet to another. Requires private key.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "from_private_key": {
+                    "type": "string",
+                    "description": "Private key of the sender wallet (0x-prefixed hex)",
+                },
+                "to_address": {
+                    "type": "string",
+                    "description": "Recipient wallet address (0x-prefixed)",
+                },
+                "token_address": {
+                    "type": "string",
+                    "description": "Token contract address (e.g. BTCB on BSC: 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c)",
+                },
+                "amount": {
+                    "type": "string",
+                    "description": "Amount of tokens to send (e.g. '0.001')",
+                },
+                "decimals": {
+                    "type": "integer",
+                    "description": "Token decimals (default: 18 for most tokens, 6 for USDT/USDC)",
+                    "default": 18,
+                },
+                "chain": {
+                    "type": "string",
+                    "enum": ["ethereum", "bsc", "polygon", "arbitrum"],
+                    "description": "Blockchain to use",
+                },
+            },
+            "required": ["from_private_key", "to_address", "token_address", "amount", "chain"],
+        },
+    )
+    def send_token(from_private_key: str, to_address: str, token_address: str, amount: str, chain: str, decimals: int = 18) -> str:
+        try:
+            from web3 import Web3
+            from eth_account import Account
+        except ImportError:
+            return "❌ Error: 'web3' library is required. Install with: pip install web3"
+
+        if chain not in RPC_ENDPOINTS:
+            return f"❌ Unsupported chain: {chain}. Supported: {list(RPC_ENDPOINTS.keys())}"
+
+        chain_info = RPC_ENDPOINTS[chain]
+        w3 = Web3(Web3.HTTPProvider(chain_info["rpc"]))
+
+        if not w3.is_connected():
+            return f"❌ Cannot connect to {chain_info['name']} RPC"
+
+        try:
+            account = Account.from_key(from_private_key)
+        except Exception as e:
+            return f"❌ Invalid private key: {e}"
+
+        sender = account.address
+
+        if not Web3.is_address(to_address):
+            return f"❌ Invalid recipient address: {to_address}"
+        if not Web3.is_address(token_address):
+            return f"❌ Invalid token address: {token_address}"
+
+        to_address = Web3.to_checksum_address(to_address)
+        token_address = Web3.to_checksum_address(token_address)
+
+        try:
+            amount_wei = int(float(amount) * (10 ** decimals))
+        except Exception as e:
+            return f"❌ Invalid amount: {e}"
+
+        # ERC-20 transfer function signature: transfer(address,uint256)
+        transfer_data = "0xa9059cbb" + to_address[2:].zfill(64) + hex(amount_wei)[2:].zfill(64)
+
+        try:
+            nonce = w3.eth.get_transaction_count(sender)
+            gas_price = w3.eth.gas_price
+            chain_id = chain_info["chain_id"]
+
+        # Estimate gas for token transfer
+            try:
+                gas_estimate = w3.eth.estimate_gas({
+                    "from": sender,
+                    "to": token_address,
+                    "data": transfer_data,
+                })
+                gas_limit = gas_estimate
+            except Exception:
+                gas_limit = 100000  # fallback for token transfers
+
+            tx = {
+                "nonce": nonce,
+                "to": token_address,
+                "value": 0,
+                "gas": gas_limit,
+                "gasPrice": gas_price,
+                "data": transfer_data,
+                "chainId": chain_id,
+            }
+
+            signed = account.sign_transaction(tx)
+            tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+            tx_hex = tx_hash.hex()
+
+            lines = ["✅ Token Transfer Sent Successfully!"]
+            lines.append(f"   From:     {sender}")
+            lines.append(f"   To:       {to_address}")
+            lines.append(f"   Token:    {token_address}")
+            lines.append(f"   Amount:   {amount}")
+            lines.append(f"   Network:  {chain_info['name']}")
+            lines.append(f"   Tx Hash:  {tx_hex}")
+            lines.append(f"   Explorer: {chain_info['explorer']}/tx/{tx_hex}")
+            return "\n".join(lines)
+
+        except Exception as e:
+            return f"❌ Transaction failed: {e}"
+
+    # =====================================================================
+    # Tool 10: Get known token info (BTCB, USDT, etc.)
+    # =====================================================================
+
+    @server.tool(
+        name="token_info",
+        description="Get contract addresses for common tokens (BTCB, USDT, etc.) on different chains",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "enum": ["BTCB", "USDT", "USDC", "WBNB", "WETH"],
+                    "description": "Token symbol",
+                },
+                "chain": {
+                    "type": "string",
+                    "enum": ["ethereum", "bsc", "polygon", "arbitrum"],
+                    "description": "Blockchain to check",
+                },
+            },
+            "required": ["token", "chain"],
+        },
+    )
+    def token_info(token: str, chain: str) -> str:
+        # Common token contract addresses
+        tokens_db = {
+            "BTCB": {
+                "bsc": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+            },
+            "USDT": {
+                "ethereum": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+                "bsc": "0x55d398326f99059fF775485246999027B3197955",
+                "polygon": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+                "arbitrum": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+            },
+            "USDC": {
+                "ethereum": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                "bsc": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+                "polygon": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+                "arbitrum": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+            },
+            "WBNB": {
+                "bsc": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+            },
+            "WETH": {
+                "ethereum": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                "arbitrum": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+            },
+        }
+
+        if token not in tokens_db:
+            return f"❌ Unknown token: {token}. Known: {list(tokens_db.keys())}"
+
+        chain_name = RPC_ENDPOINTS.get(chain, {}).get("name", chain)
+        if chain not in tokens_db[token]:
+            return f"ℹ️  {token} is not available on {chain_name}"
+
+        contract = tokens_db[token][chain]
+        chain_name = RPC_ENDPOINTS[chain]["name"]
+        return f"📋 Token Info:\n   Symbol:   {token}\n   Network:  {chain_name}\n   Contract: {contract}\n   Explorer: {RPC_ENDPOINTS[chain]['explorer']}/address/{contract}\n"
 
     return server
 
 
 # ======================================================================
 # Main
+# ======================================================================
+
 # ======================================================================
 
 if __name__ == "__main__":
